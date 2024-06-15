@@ -3,10 +3,23 @@ import { Button } from "./Button";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
+const useDebounce = (fn, value) => {
+  useEffect(() => {
+    // if (value) {
+      const timer = setTimeout(() => {
+        fn();
+      }, 2000);
+      return () => {
+        clearTimeout(timer);
+      };
+    // }
+  }, [value]);
+};
+
 export const Users = () => {
   const [users, setUsers] = useState([]);
   const [filter, setFilter] = useState("");
-  const timeoutRef = useRef(null);
+  // const timeoutRef = useRef(null);
 
   function fetchUsers() {
     axios
@@ -16,20 +29,21 @@ export const Users = () => {
       });
   }
 
-  useEffect(() => {
-    //debouncing
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+  useDebounce(() => {
+    // debouncing using useRef
+    // if (timeoutRef.current) {
+    //   clearTimeout(timeoutRef.current);
+    // }
+    // timeoutRef.current = setTimeout(() => {
+    //   fetchUsers();
+    // }, 2000);
+    // return () => {
+    //   clearTimeout(timeoutRef.current);
+    // };
 
-    timeoutRef.current = setTimeout(() => {
-      fetchUsers();
-    }, 2000);
-
-    return () => {
-      clearTimeout(timeoutRef.current);
-    };
-  }, [filter]);
+    // debouncing using custom hook
+    fetchUsers();
+  }, filter);
 
   return (
     <>
