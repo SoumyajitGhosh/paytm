@@ -1,0 +1,26 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+datasource db {
+  provider = "postgresql"
+  url = "postgresql://paytmDB_owner:DSVOi1rMbX7t@ep-raspy-base-a5alzex7.us-east-2.aws.neon.tech/paytmDB?sslmode=require"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        Int    @id @default(autoincrement())
+  userName     String @unique
+  password  String
+  firstName String
+  lastName  String
+  accounts  Account[]
+}
+
+model Account {
+  id        Int    @id @default(autoincrement())
+  userId    Int
+  user      User   @relation(fields: [userId], references: [id])
+  balance   Int
+}

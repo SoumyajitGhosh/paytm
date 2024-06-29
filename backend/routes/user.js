@@ -1,7 +1,7 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const zod = require("zod");
-const { User, Account } = require("../db");
+const { User, Account } = require("../model");
 const { JWT_SECRET } = require("../config");
 const { authMiddleware } = require("../middleware");
 
@@ -25,13 +25,14 @@ const router = express.Router();
 
 router.post("/signup", async (req, res) => {
     const { success } = signupBody.safeParse(req.body);
+    console.log("Success flag:", success, req.body)
     if (!success) {
         return res.status(411).json({
             message: "Email already taken/Incorrect inputs",
         })
     }
 
-    const existingUser = await User.findOne({
+    const existingUser = await User.getUserByMail({
         userName: req.body.userName
     })
 
@@ -41,16 +42,16 @@ router.post("/signup", async (req, res) => {
         })
     }
 
-    const user = await User.create({
+    const user = await User.createUser({
         userName: req.body.userName,
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         password: req.body.password
     })
 
-    const userId = user._id;
+    const userId = user.id;
 
-    await Account.create({
+    await Account.createAccount({
         userId,
         balance: 1 + Math.random() * 1000
     })
@@ -72,13 +73,13 @@ router.post("/signin", async (req, res) => {
             message: "Incorrect inputs"
         })
     }
-    const user = await User.findOne({
+    const user = await User.getUserByMail({
         userName: req.body.userName,
         password: req.body.password
     })
     if (user) {
         const token = jwt.sign({
-            userId: user._id
+            userId: user.id
         }, JWT_SECRET);
         return res.status(200).json({
             token: token
@@ -97,9 +98,10 @@ router.put("/update", authMiddleware, async (req, res) => {
             nessage: "Error while updating information"
         })
     }
-    await User.updateOne({
-        _id: req.userId
-    }, req.body)
+    await User.updateUser({
+        id: req.userId,
+        ...req.body
+    })
 
     return res.status(200).json({
         message: "Updated Successfully"
@@ -109,24 +111,14 @@ router.put("/update", authMiddleware, async (req, res) => {
 router.get("/bulk", async (req, res) => {
     const filter = req.query.filter || "";
 
-    const users = await User.find({
-        $or: [{
-            firstName: {
-                "$regex": filter
-            }
-        }, {
-            lastName: {
-                "$regex": filter
-            }
-        }]
-    })
+    const users = await User.getUserByName({ filter })
 
     res.json({
         user: users.map(user => ({
             userName: user.userName,
             firstName: user.firstName,
             lastName: user.lastName,
-            _id: user._id
+            _id: user.id
         }))
     })
 })
